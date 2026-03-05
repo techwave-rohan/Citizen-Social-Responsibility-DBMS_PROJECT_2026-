@@ -1,0 +1,46 @@
+# ===============================
+# Java / Maven .gitignore
+# ===============================
+
+# Compiled class files
+*.class
+
+# Logs
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Maven build directory
+target/
+
+# Build output (sometimes used)
+bin/
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Virtual machine crash logs
+hs_err_pid*
+replay_pid*
+
+# Database config
+dbconfig.properties
