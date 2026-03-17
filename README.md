@@ -32,7 +32,7 @@ A full-stack web application designed for a government-run Citizen Trust Score M
    ```
    The backend will be available at `http://localhost:8000`. API docs at `http://localhost:8000/docs`.
 
-## Frontend Setup (React + Vite)
+## Frontend Setup
 1. Navigate to the `frontend` directory:
    ```bash
    cd frontend
