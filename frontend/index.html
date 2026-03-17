@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustScore Portal - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="login-bg">
+    <div class="login-container card">
+        <div class="logo-title">🏛 TrustScore Portal</div>
+        <div class="tabs" style="margin-bottom: 1.5rem;">
+            <div class="tab active" style="flex: 1; text-align: center;" id="tab-login"
+                onclick="toggleAuthMode('login')">Login</div>
+            <div class="tab" style="flex: 1; text-align: center;" id="tab-signup" onclick="toggleAuthMode('signup')">
+                Sign Up</div>
+        </div>
+
+        <form id="auth-form">
+            <!-- Signup-specific fields -->
+            <div id="signup-fields" class="hidden">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label for="signup-role">Register As</label>
+                    <select id="signup-role" onchange="toggleSignupRole()" class="w-full form-group"
+                        style="padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border); background-color: var(--surface); color: var(--text);">
+                        <option value="citizen">Citizen</option>
+                        <option value="official">Government Official</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+                <div id="citizen-fields">
+                    <div class="form-group">
+                        <label for="aadhaar">Aadhaar Number (12 digits)</label>
+                        <input type="text" id="aadhaar" placeholder="Enter your 12-digit Aadhaar" maxlength="12">
+                    </div>
+                    <div class="form-group">
+                        <label for="dob">Date of Birth</label>
+                        <input type="date" id="dob">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" placeholder="City">
+                        </div>
+                        <div class="form-group">
+                            <label for="contact">Contact No</label>
+                            <input type="text" id="contact" placeholder="Phone">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="official-fields" class="hidden">
+                    <div class="form-group">
+                        <label for="department">Department ID (Optional)</label>
+                        <input type="number" id="department" placeholder="Department ID">
+                    </div>
+                </div>
+
+                <div id="shared-signup-fields">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="firstname">First Name</label>
+                            <input type="text" id="firstname" placeholder="First Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastname">Last Name</label>
+                            <input type="text" id="lastname" placeholder="Last Name">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email" id="login-label">Aadhaar or Email</label>
+                <input type="text" id="email" required placeholder="Enter Aadhaar (Citizen) or Email (Official)">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required placeholder="Enter your password">
+            </div>
+            <div id="error-message" class="text-red hidden" style="margin-bottom: 1rem; font-size: 0.875rem;"></div>
+            <div id="success-message" class="text-green hidden" style="margin-bottom: 1rem; font-size: 0.875rem;"></div>
+            <button type="submit" id="submit-btn" class="btn btn-primary w-full">Login</button>
+        </form>
+    </div>
+    <script src="js/api.js"></script>
+    <script>
+        let authMode = 'login'; // 'login' or 'signup'
+
+        function toggleSignupRole() {
+            const role = document.getElementById('signup-role').value;
+            const citizenFields = document.getElementById('citizen-fields');
+            const officialFields = document.getElementById('official-fields');
+            const sharedFields = document.getElementById('shared-signup-fields');
+            const emailContainer = document.getElementById('email').parentElement;
+
+            // Adjust requirements based on role
+            if (role === 'citizen') {
+                citizenFields.classList.remove('hidden');
+                officialFields.classList.add('hidden');
+                sharedFields.classList.remove('hidden');
+
+                emailContainer.classList.add('hidden');
+                document.getElementById('email').required = false;
+
+                document.getElementById('aadhaar').required = true;
+                document.getElementById('firstname').required = true;
+                document.getElementById('lastname').required = true;
+                document.getElementById('dob').required = true;
+                document.getElementById('city').required = true;
+                document.getElementById('contact').required = true;
+            } else if (role === 'official') {
+                citizenFields.classList.add('hidden');
+                officialFields.classList.remove('hidden');
+                sharedFields.classList.remove('hidden');
+
+                emailContainer.classList.remove('hidden');
+                document.getElementById('email').required = true;
+                document.getElementById('login-label').textContent = 'Email Address';
+
+                document.getElementById('aadhaar').required = false;
+                document.getElementById('firstname').required = true;
+                document.getElementById('lastname').required = true;
+                document.getElementById('dob').required = false;
+                document.getElementById('city').required = false;
+                document.getElementById('contact').required = false;
+            } else if (role === 'admin') {
+                citizenFields.classList.add('hidden');
+                officialFields.classList.add('hidden');
+                sharedFields.classList.add('hidden'); // Admin only needs Email and Password
+
+                emailContainer.classList.remove('hidden');
+                document.getElementById('email').required = true;
+                document.getElementById('login-label').textContent = 'Email Address';
+
+                document.getElementById('aadhaar').required = false;
+                document.getElementById('firstname').required = false;
+                document.getElementById('lastname').required = false;
+                document.getElementById('dob').required = false;
+                document.getElementById('city').required = false;
+                document.getElementById('contact').required = false;
+            }
+        }
+
+        function toggleAuthMode(mode) {
+            authMode = mode;
+            const signupFields = document.getElementById('signup-fields');
+            const submitBtn = document.getElementById('submit-btn');
+            const errorMsg = document.getElementById('error-message');
+            const successMsg = document.getElementById('success-message');
+            const emailContainer = document.getElementById('email').parentElement;
+
+            errorMsg.classList.add('hidden');
+            successMsg.classList.add('hidden');
+
+            document.getElementById('tab-login').classList.remove('active');
+            document.getElementById('tab-signup').classList.remove('active');
+            document.getElementById(`tab-${mode}`).classList.add('active');
+
+            if (mode === 'signup') {
+                signupFields.classList.remove('hidden');
+                submitBtn.textContent = 'Sign Up';
+                toggleSignupRole(); // trigger the state based on current dropdown
+            } else {
+                signupFields.classList.add('hidden');
+                submitBtn.textContent = 'Login';
+
+                // Reset required states for login mode
+                document.getElementById('aadhaar').required = false;
+                document.getElementById('firstname').required = false;
+                document.getElementById('lastname').required = false;
+                document.getElementById('dob').required = false;
+                document.getElementById('city').required = false;
+                document.getElementById('contact').required = false;
+
+                emailContainer.classList.remove('hidden');
+                document.getElementById('email').required = true;
+                document.getElementById('login-label').textContent = 'Aadhaar or Email';
+            }
+        }
+
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-message');
+            const successMsg = document.getElementById('success-message');
+            const submitBtn = document.getElementById('submit-btn');
+
+            errorMsg.classList.add('hidden');
+            successMsg.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.textContent = authMode === 'login' ? 'Logging in...' : 'Signing up...';
+
+            if (authMode === 'signup') {
+                try {
+                    const role = document.getElementById('signup-role').value;
+                    const pwd = document.getElementById('password').value;
+
+                    let endpoint = '';
+                    let payload = {};
+
+                    if (role === 'citizen') {
+                        endpoint = '/auth/register';
+                        payload = {
+                            AadhaarNumber: document.getElementById('aadhaar').value,
+                            FirstName: document.getElementById('firstname').value,
+                            LastName: document.getElementById('lastname').value,
+                            DateOfBirth: document.getElementById('dob').value,
+                            City: document.getElementById('city').value,
+                            ContactNo: document.getElementById('contact').value,
+                            Password: pwd
+                        };
+                    } else if (role === 'official') {
+                        endpoint = '/auth/register/official';
+                        const first = document.getElementById('firstname').value;
+                        const last = document.getElementById('lastname').value;
+                        const dept = document.getElementById('department').value;
+
+                        payload = {
+                            FirstName: first,
+                            LastName: last,
+                            Email: document.getElementById('email').value,
+                            Password: pwd,
+                            Designation: 'official',
+                            DepartmentID: dept ? parseInt(dept) : null
+                        };
+                    } else if (role === 'admin') {
+                        endpoint = '/auth/register/admin';
+                        payload = {
+                            Email: document.getElementById('email').value,
+                            Password: pwd
+                        };
+                    }
+
+                    const res = await fetch(BASE + endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const errorData = await res.json();
+                        let errorMsgStr = 'Registration failed';
+                        if (errorData.detail) {
+                            if (Array.isArray(errorData.detail)) {
+                                errorMsgStr = errorData.detail.map(e => `${e.loc[e.loc.length - 1]}: ${e.msg}`).join(', ');
+                            } else {
+                                errorMsgStr = errorData.detail;
+                            }
+                        }
+                        throw new Error(errorMsgStr);
+                    }
+
+                    successMsg.textContent = 'Registration successful! You can now log in.';
+                    successMsg.classList.remove('hidden');
+                    // Automatically switch to login mode after successful signup
+                    setTimeout(() => {
+                        toggleAuthMode('login');
+                        // Pre-fill email, leave password so they type it
+                        document.getElementById('password').value = '';
+                    }, 2000);
+
+                } catch (err) {
+                    errorMsg.textContent = err.message;
+                    errorMsg.classList.remove('hidden');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = authMode === 'login' ? 'Login' : 'Sign Up';
+                }
+            } else {
+                // Login logic
+                try {
+                    const formData = new URLSearchParams();
+                    formData.append('username', email); // mapping email to username
+                    formData.append('password', password);
+                    formData.append('grant_type', 'password'); // necessary for standard OAuth2
+
+                    const response = await fetch(BASE + '/auth/token', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: formData.toString()
+                    });
+
+                    if (!response.ok) {
+                        const errData = await response.json();
+                        let errorMsgStr = 'Invalid credentials';
+                        if (errData.detail) {
+                            if (Array.isArray(errData.detail)) {
+                                errorMsgStr = errData.detail.map(e => `${e.loc[e.loc.length - 1]}: ${e.msg}`).join(', ');
+                            } else {
+                                errorMsgStr = errData.detail;
+                            }
+                        }
+                        throw new Error(errorMsgStr);
+                    }
+
+                    const data = await response.json();
+                    handleLoginSuccess(data);
+
+                } catch (err) {
+                    errorMsg.textContent = err.message || 'Login failed. Please check your credentials.';
+                    errorMsg.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Login';
+                }
+            }
+        });
+
+        function handleLoginSuccess(data) {
+            // Support both access_token and standard token formats
+            const token = data.access_token || data.token;
+            localStorage.setItem('token', token);
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const role = payload.role;
+
+                if (role === 'citizen') window.location.href = 'citizen.html';
+                else if (role === 'official') window.location.href = 'official.html';
+                else if (role === 'admin') window.location.href = 'admin.html';
+                else throw new Error("Unknown role");
+            } catch (e) {
+                // Redirect to citizen by default if payload parsing fails temporarily
+                window.location.href = 'citizen.html';
+            }
+        }
+
+        if (getToken()) {
+            try {
+                const payload = JSON.parse(atob(getToken().split('.')[1]));
+                if (payload.role === 'citizen') window.location.href = 'citizen.html';
+                else if (payload.role === 'official') window.location.href = 'official.html';
+                else if (payload.role === 'admin') window.location.href = 'admin.html';
+            } catch (e) { }
+        }
+    </script>
+</body>
+
+</html>

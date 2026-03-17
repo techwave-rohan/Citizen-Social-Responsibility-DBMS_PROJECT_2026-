@@ -1,0 +1,16 @@
+{
+  "source_directories": [
+    "backend"
+  ],
+  "site_package_search_strategy": "pep561",
+  "search_path": [
+    "backend/venv/Lib/site-packages",
+    "backend"
+  ],
+  "exclude": [
+    ".*/venv/.*",
+    ".*/\\.venv/.*",
+    ".*/ven/.*",
+    ".*/node_modules/.*"
+  ]
+}
