@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustScore - Official Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Sidebar injected by api.js -->
+    
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Official Dashboard</h1>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-4 mb-8">
+            <div class="card stat-card">
+                <span class="value" id="stat-pending-complaints">...</span>
+                <span class="label">Pending Complaints</span>
+            </div>
+            <div class="card stat-card">
+                <span class="value" id="stat-total-actions">...</span>
+                <span class="label">Total Actions Recorded</span>
+            </div>
+            <div class="card stat-card">
+                <span class="value" id="stat-restricted">...</span>
+                <span class="label">Citizens Restricted</span>
+            </div>
+            <div class="card stat-card">
+                <span class="value" id="stat-violations-today">...</span>
+                <span class="label">Violations Today</span>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <!-- Issue Restriction Form -->
+            <div class="card">
+                <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Issue Restriction</h2>
+                <form id="issue-restriction-form">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="restrict-citizen-id">Citizen ID</label>
+                            <input type="number" id="restrict-citizen-id" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="restrict-dept">Department</label>
+                            <select id="restrict-dept" required>
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="restrict-type">Restriction Type</label>
+                            <input type="text" id="restrict-type" required placeholder="e.g. Travel Ban">
+                        </div>
+                        <div class="form-group">
+                            <label for="restrict-end-date">End Date</label>
+                            <input type="date" id="restrict-end-date" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-danger">Issue Restriction</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Data Tables Map -->
+        <div class="card mb-8">
+            <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Pending Complaints</h2>
+            <div class="table-container">
+                <table style="min-width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Filed By</th>
+                            <th>Against</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="complaints-table-body">
+                        <!-- Rows inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card mb-8">
+            <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Recent Violations</h2>
+            <div class="table-container">
+                <table style="min-width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Citizen ID</th>
+                            <th>Code</th>
+                            <th>Action Name</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violations-table-body">
+                        <!-- Rows inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Repeated Violations (Department)</h2>
+            <div class="table-container">
+                <table style="min-width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Citizen ID</th>
+                            <th>Full Name</th>
+                            <th>Action Name</th>
+                            <th>Violation Count</th>
+                            <th>Last Violation</th>
+                        </tr>
+                    </thead>
+                    <tbody id="repeated-violations-table-body">
+                        <!-- Rows inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card mb-8">
+            <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Assign Benefit by Citizen ID</h2>
+            <form id="check-eligibility-form" style="margin-bottom: 1rem;">
+                <div class="form-group" style="display: flex; gap: 1rem; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label for="eligibility-citizen-id">Citizen ID</label>
+                        <input type="number" id="eligibility-citizen-id" required placeholder="Enter Citizen ID">
+                    </div>
+                    <button type="submit" class="btn btn-outline">Check Eligibility</button>
+                </div>
+            </form>
+            <div id="eligibility-result" class="hidden">
+                <form id="assign-benefit-form">
+                    <input type="hidden" id="assign-citizen-id">
+                    <div class="form-group">
+                        <label for="assign-benefit-id">Select Eligible Benefit</label>
+                        <select id="assign-benefit-id" required>
+                            <!-- Options injected here -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Assign Benefit</button>
+                </form>
+            </div>
+            <div id="eligibility-message" class="text-red hidden" style="margin-top: 1rem; font-size: 0.875rem;"></div>
+        </div>
+
+        <div class="grid grid-cols-2 mb-8" style="gap: 2rem;">
+            <div class="card">
+                <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Department Restrictions</h2>
+                <div class="table-container">
+                    <table style="min-width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Citizen</th>
+                                <th>Department</th>
+                                <th>Restriction Type</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="restrictions-table-body">
+                            <!-- Rows inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Citizens with Issues</h2>
+                <div class="table-container">
+                    <table style="min-width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Citizen</th>
+                                <th>Complaints Against</th>
+                                <th>Violations</th>
+                            </tr>
+                        </thead>
+                        <tbody id="issues-table-body">
+                            <!-- Rows inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resolve Complaint Modal (Hidden) -->
+    <template id="resolve-modal-template">
+        <form id="resolve-form">
+            <input type="hidden" id="resolve-complaint-id">
+            <p style="margin-bottom: 1rem;" class="text-muted">How would you like to resolve this complaint?</p>
+            <div class="form-group">
+                <label for="resolve-status">Resolution Status</label>
+                <select id="resolve-status" required>
+                    <option value="Reviewed">Reviewed - No Action Taken</option>
+                    <option value="Resolved">Resolved - Action Taken</option>
+                    <option value="Dismissed">Dismissed - Invalid</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="resolve-note">Resolution Note</label>
+                <textarea id="resolve-note" rows="3" placeholder="Additional details..." required></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Resolution</button>
+            </div>
+        </form>
+    </template>
+
+    <script src="js/api.js"></script>
+    <script src="js/official.js"></script>
+</body>
+</html>
