@@ -177,3 +177,154 @@ tr:nth-child(even) td { background-color: #f8fafc; }
 .tab:hover:not(.active) { border-bottom-color: var(--border); }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
+
+/* ─── Trigger-Related Styles ─────────────────────────────── */
+
+.badge-orange { background-color: #fff7ed; color: #ea580c; }
+
+.font-medium { font-weight: 500; }
+.mt-8 { margin-top: 2rem; }
+
+/* Stat card danger variant */
+.stat-card-danger .value { color: var(--red); }
+.stat-card-danger-active {
+    border: 2px solid var(--red);
+    animation: pulseBorder 2s ease-in-out infinite;
+}
+
+@keyframes pulseBorder {
+    0%, 100% { border-color: var(--red); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    50% { border-color: #ef4444; box-shadow: 0 0 12px 2px rgba(220, 38, 38, 0.15); }
+}
+
+/* Card header with icon */
+.card-header-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.card-icon {
+    font-size: 1.25rem;
+}
+
+/* Action preview panel */
+.action-preview {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+.preview-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+}
+.preview-warning {
+    color: var(--yellow);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+/* Trigger feedback panel */
+.trigger-feedback {
+    margin-top: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg);
+    border: 1px solid var(--border);
+}
+.feedback-header {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    background: #f0fdf4;
+    color: var(--green);
+    border-bottom: 1px solid var(--border);
+}
+.feedback-score {
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.1rem;
+}
+.score-change {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.old-score {
+    color: var(--muted);
+    text-decoration: line-through;
+}
+.score-arrow {
+    color: var(--muted);
+    font-size: 1.2rem;
+}
+.new-score {
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+.score-delta {
+    font-weight: 600;
+}
+
+/* Trigger alert boxes */
+.trigger-alert {
+    margin: 0.5rem 0.75rem 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    animation: slideDown 0.3s ease-out;
+}
+.trigger-alert strong {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+.trigger-alert p {
+    margin: 0;
+    line-height: 1.4;
+}
+.trigger-alert small {
+    color: var(--muted);
+    display: block;
+    margin-top: 0.25rem;
+}
+.trigger-alert-danger {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+.trigger-alert-warning {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* High risk row */
+.high-risk-row td {
+    background-color: #fef2f2 !important;
+}
+
+/* Critical restriction banner */
+.restriction-banner-critical {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    animation: pulseBg 2s ease-in-out infinite;
+}
+@keyframes pulseBg {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.85; }
+}
+
+/* Auto-restriction card */
+.auto-restriction-card {
+    border-left: 4px solid #ea580c;
+}

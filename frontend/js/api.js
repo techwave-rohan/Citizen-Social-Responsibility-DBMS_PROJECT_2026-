@@ -1,3 +1,5 @@
+// ⚡ DEPLOYMENT: Replace with your Render backend URL, e.g. 'https://csr-backend.onrender.com'
+// For local development, keep as 'http://localhost:8000'
 const BASE = 'http://localhost:8000';
 
 function getToken() { 

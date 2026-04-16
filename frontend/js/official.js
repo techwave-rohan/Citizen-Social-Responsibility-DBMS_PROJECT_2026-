@@ -22,18 +22,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initDashboard() {
     loadStats();
+    loadActionTypes();
     loadComplaints();
     loadViolations();
     loadRepeatedViolations();
     loadDepartments();
     loadDepartmentRestrictions();
     loadCitizensWithIssues();
+    loadHighRiskCitizens();
+    loadAutoRestrictions();
 
     // Attach form handlers
+    document.getElementById('record-action-form').addEventListener('submit', handleRecordAction);
     document.getElementById('issue-restriction-form').addEventListener('submit', handleIssueRestriction);
     document.getElementById('check-eligibility-form').addEventListener('submit', handleCheckEligibility);
     document.getElementById('assign-benefit-form').addEventListener('submit', handleAssignBenefit);
+
+    // Action type preview on change
+    document.getElementById('action-type-select').addEventListener('change', showActionPreview);
 }
+
+// ─── Stats ────────────────────────────────────────────────────────
 
 async function loadStats() {
     try {
@@ -47,10 +56,240 @@ async function loadStats() {
     }
 }
 
+// ─── Action Types (for Record Action form) ────────────────────────
+
+let actionTypesCache = [];
+
+async function loadActionTypes() {
+    try {
+        const actionTypes = await apiFetch('/official/action-types');
+        actionTypesCache = actionTypes;
+        const select = document.getElementById('action-type-select');
+        select.innerHTML = '<option value="">-- Select Action --</option>' +
+            actionTypes.map(a => {
+                const icon = a.ScoreImpact >= 0 ? '▲' : '▼';
+                const cls = a.ScoreImpact >= 0 ? '+' : '';
+                return `<option value="${a.ActionTypeID}" data-impact="${a.ScoreImpact}" data-severity="${a.Severity}">${a.ActionName} (${cls}${a.ScoreImpact})</option>`;
+            }).join('');
+    } catch (err) {
+        console.error("Failed to load action types:", err);
+    }
+}
+
+function showActionPreview() {
+    const select = document.getElementById('action-type-select');
+    const preview = document.getElementById('action-preview');
+    const selectedOption = select.options[select.selectedIndex];
+
+    if (!select.value) {
+        preview.classList.add('hidden');
+        return;
+    }
+
+    const impact = parseInt(selectedOption.dataset.impact);
+    const severity = parseInt(selectedOption.dataset.severity);
+    const isNegative = impact < 0;
+
+    preview.classList.remove('hidden');
+    preview.innerHTML = `
+        <div class="preview-row">
+            <span class="text-muted">Score Impact:</span>
+            <span class="${isNegative ? 'text-red' : 'text-green'} font-medium">${isNegative ? '' : '+'}${impact} points</span>
+        </div>
+        <div class="preview-row">
+            <span class="text-muted">Severity:</span>
+            <span>${'⬤'.repeat(severity)}${'○'.repeat(5 - severity)}</span>
+        </div>
+        ${isNegative ? `
+        <div class="preview-row preview-warning">
+            <span>⚠️ Negative action — may trigger auto-restrictions if repeated 3+ times this month</span>
+        </div>
+        ` : ''}
+    `;
+}
+
+// ─── Record Action (Trigger #1: after_action_insert) ──────────────
+
+async function handleRecordAction(e) {
+    e.preventDefault();
+    const citizenId = document.getElementById('action-citizen-id').value;
+    const actionTypeId = document.getElementById('action-type-select').value;
+    const btn = e.target.querySelector('button[type="submit"]');
+    const feedbackDiv = document.getElementById('trigger-feedback');
+
+    if (!citizenId || !actionTypeId) {
+        showToast('Please fill in all fields', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Recording...';
+
+    try {
+        const result = await apiFetch('/official/action', 'POST', {
+            CitizenID: parseInt(citizenId),
+            ActionTypeID: parseInt(actionTypeId)
+        });
+
+        // Show detailed trigger feedback
+        feedbackDiv.classList.remove('hidden');
+        let feedbackHTML = `
+            <div class="feedback-header">✅ Action Recorded: ${result.action_name}</div>
+            <div class="feedback-score">
+                <span class="score-change">
+                    <span class="old-score">${result.old_score}</span>
+                    <span class="score-arrow">→</span>
+                    <span class="new-score ${result.new_score > result.old_score ? 'text-green' : result.new_score < result.old_score ? 'text-red' : ''}">${result.new_score}</span>
+                </span>
+                <span class="score-delta ${result.score_impact >= 0 ? 'text-green' : 'text-red'}">
+                    (${result.score_impact >= 0 ? '+' : ''}${result.score_impact})
+                </span>
+            </div>
+        `;
+
+        // Trigger #2: High Risk Flag notification
+        if (result.high_risk_flagged) {
+            feedbackHTML += `
+                <div class="trigger-alert trigger-alert-danger">
+                    <strong>🔴 Trigger Fired: auto_flag_high_risk</strong>
+                    <p>Score dropped below 40 — citizen has been automatically flagged as HIGH RISK with a 60-day restriction.</p>
+                </div>
+            `;
+            showToast('⚠️ HIGH RISK FLAG auto-applied! Score below 40.', 'error');
+        }
+
+        // Trigger #3: Auto restriction for repeated violations
+        if (result.auto_restrictions && result.auto_restrictions.length > 0) {
+            result.auto_restrictions.forEach(r => {
+                if (r.RestrictionType && r.RestrictionType.startsWith('Auto:')) {
+                    feedbackHTML += `
+                        <div class="trigger-alert trigger-alert-warning">
+                            <strong>⚡ Trigger Fired: auto_restrict_repeated_violation</strong>
+                            <p>${r.RestrictionType} — 30-day restriction applied for 3+ repeated offenses this month.</p>
+                            <small>Valid: ${formatDate(r.StartDate)} → ${formatDate(r.EndDate)}</small>
+                        </div>
+                    `;
+                    showToast(`⚡ Auto-restriction applied: ${r.RestrictionType}`, 'error');
+                }
+            });
+        }
+
+        feedbackDiv.innerHTML = feedbackHTML;
+
+        // Main success toast
+        showToast(`Action recorded: ${result.action_name} (${result.old_score} → ${result.new_score})`);
+
+        // Refresh all relevant panels
+        e.target.reset();
+        document.getElementById('action-preview').classList.add('hidden');
+        loadStats();
+        loadHighRiskCitizens();
+        loadAutoRestrictions();
+        loadViolations();
+        loadRepeatedViolations();
+        loadDepartmentRestrictions();
+
+        // Auto-hide feedback after 15 seconds
+        setTimeout(() => {
+            feedbackDiv.classList.add('hidden');
+        }, 15000);
+
+    } catch (err) {
+        showToast(err.message || 'Failed to record action', 'error');
+        feedbackDiv.classList.add('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Record Action';
+    }
+}
+
+// ─── High Risk Citizens (Trigger #2: auto_flag_high_risk) ─────────
+
+async function loadHighRiskCitizens() {
+    try {
+        const citizens = await apiFetch('/official/high-risk-citizens');
+        const tbody = document.getElementById('high-risk-table-body');
+        const statEl = document.getElementById('stat-high-risk');
+        const statCard = document.getElementById('stat-high-risk-card');
+
+        statEl.textContent = citizens.length;
+
+        // Highlight the card if there are high-risk citizens
+        if (citizens.length > 0) {
+            statCard.classList.add('stat-card-danger-active');
+        } else {
+            statCard.classList.remove('stat-card-danger-active');
+        }
+
+        if (citizens.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No high-risk citizens currently flagged.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = citizens.map(c => `
+            <tr class="high-risk-row">
+                <td>${c.CitizenID}</td>
+                <td><strong>${c.FullName}</strong></td>
+                <td>${c.City}</td>
+                <td><span class="badge badge-red">${c.CurrentScore}</span></td>
+                <td>${formatDate(c.FlaggedDate)}</td>
+                <td>${formatDate(c.FlagExpiry)}</td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error("High risk citizens error:", err);
+        const tbody = document.getElementById('high-risk-table-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-red">Failed to load</td></tr>';
+        document.getElementById('stat-high-risk').textContent = '0';
+    }
+}
+
+// ─── Auto-Generated Restrictions (Trigger #3) ────────────────────
+
+async function loadAutoRestrictions() {
+    try {
+        const restrictions = await apiFetch('/official/auto-restrictions');
+        const tbody = document.getElementById('auto-restrictions-table-body');
+
+        if (restrictions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No auto-generated restrictions.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = restrictions.map(r => {
+            const now = new Date();
+            const endDate = new Date(r.EndDate);
+            const isActive = endDate >= now;
+            const isHighRisk = r.RestrictionType === 'High Risk Flag';
+            const badgeClass = isHighRisk ? 'badge-red' : 'badge-orange';
+            const statusBadge = isActive
+                ? '<span class="badge badge-red">Active</span>'
+                : '<span class="badge" style="background:#e2e8f0;color:#64748b;">Expired</span>';
+
+            return `
+                <tr>
+                    <td>${r.CitizenName} (ID: ${r.CitizenID})</td>
+                    <td><span class="badge ${badgeClass}">${r.RestrictionType}</span></td>
+                    <td>${r.DepartmentName}</td>
+                    <td>${formatDate(r.StartDate)}</td>
+                    <td>${formatDate(r.EndDate)}</td>
+                    <td>${statusBadge}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error("Auto restrictions error:", err);
+        const tbody = document.getElementById('auto-restrictions-table-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-center text-red">Failed to load</td></tr>';
+    }
+}
+
+// ─── Departments ──────────────────────────────────────────────────
+
 async function loadDepartments() {
     try {
         const select = document.getElementById('restrict-dept');
-        if (!select) return; // element might not exist
+        if (!select) return;
         const depts = await apiFetch('/official/departments');
         
         select.innerHTML = '<option value="">-- Select Department --</option>' + 
@@ -59,6 +298,8 @@ async function loadDepartments() {
         console.error("Departments load error", err);
     }
 }
+
+// ─── Complaints ───────────────────────────────────────────────────
 
 async function loadComplaints() {
     try {
@@ -92,10 +333,11 @@ async function loadComplaints() {
     }
 }
 
+// ─── Violations ───────────────────────────────────────────────────
+
 async function loadViolations() {
     try {
         const violations = await apiFetch('/official/violations');
-        document.getElementById('stat-violations-today').textContent = violations.length || 0;
         
         const tbody = document.getElementById('violations-table-body');
         if (violations.length === 0) {
@@ -115,6 +357,8 @@ async function loadViolations() {
         console.error("Violations error:", err);
     }
 }
+
+// ─── Repeated Violations ──────────────────────────────────────────
 
 async function loadRepeatedViolations() {
     try {
@@ -144,6 +388,8 @@ async function loadRepeatedViolations() {
 
     }
 }
+
+// ─── Eligibility & Benefits ──────────────────────────────────────
 
 async function handleCheckEligibility(e) {
     e.preventDefault();
@@ -196,6 +442,8 @@ async function handleAssignBenefit(e) {
     }
 }
 
+// ─── Department Restrictions ──────────────────────────────────────
+
 async function loadDepartmentRestrictions() {
     try {
         const restrictions = await apiFetch('/official/restrictions');
@@ -221,6 +469,8 @@ async function loadDepartmentRestrictions() {
     }
 }
 
+// ─── Citizens with Issues ─────────────────────────────────────────
+
 async function loadCitizensWithIssues() {
     try {
         const issues = await apiFetch('/official/citizens-with-issues');
@@ -244,7 +494,7 @@ async function loadCitizensWithIssues() {
     }
 }
 
-
+// ─── Issue Restriction Form ───────────────────────────────────────
 
 async function handleIssueRestriction(e) {
     e.preventDefault();
@@ -262,10 +512,14 @@ async function handleIssueRestriction(e) {
         });
         showToast('Restriction issued successfully!');
         e.target.reset();
+        loadDepartmentRestrictions();
+        loadStats();
     } catch (err) {
         showToast(err.message || 'Failed to issue restriction', 'error');
     }
 }
+
+// ─── Resolve Complaint Modal ──────────────────────────────────────
 
 function openResolveModal(complaintId) {
     const template = document.getElementById('resolve-modal-template').innerHTML;

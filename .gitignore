@@ -44,3 +44,19 @@ replay_pid*
 
 # Database config
 dbconfig.properties
+
+# ===============================
+# Python
+# ===============================
+.env
+__pycache__/
+*.pyc
+venv/
+.venv/
+ven/
+
+# ===============================
+# Node.js
+# ===============================
+node_modules/
+dist/

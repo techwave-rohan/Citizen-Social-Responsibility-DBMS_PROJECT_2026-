@@ -29,16 +29,47 @@
                 <span class="value" id="stat-restricted">...</span>
                 <span class="label">Citizens Restricted</span>
             </div>
-            <div class="card stat-card">
-                <span class="value" id="stat-violations-today">...</span>
-                <span class="label">Violations Today</span>
+            <div class="card stat-card stat-card-danger" id="stat-high-risk-card">
+                <span class="value" id="stat-high-risk">...</span>
+                <span class="label">⚠️ High Risk Citizens</span>
             </div>
         </div>
 
-        <div class="mb-8">
+        <!-- Record Action Form (Trigger #1: after_action_insert) -->
+        <div class="grid grid-cols-2 mb-8" style="gap: 2rem;">
+            <div class="card">
+                <div class="card-header-icon">
+                    <span class="card-icon">📋</span>
+                    <h2 style="font-size: 1.25rem; font-weight: 600;">Record Citizen Action</h2>
+                </div>
+                <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 1rem;">Triggers auto score update, high-risk flagging, and repeated violation restrictions</p>
+                <form id="record-action-form">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label for="action-citizen-id">Citizen ID</label>
+                            <input type="number" id="action-citizen-id" required placeholder="e.g. 101">
+                        </div>
+                        <div class="form-group">
+                            <label for="action-type-select">Action Type</label>
+                            <select id="action-type-select" required>
+                                <option value="">Loading action types...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="action-preview" class="action-preview hidden"></div>
+                    <button type="submit" class="btn btn-primary w-full">Record Action</button>
+                </form>
+                <!-- Trigger feedback area -->
+                <div id="trigger-feedback" class="trigger-feedback hidden"></div>
+            </div>
+
             <!-- Issue Restriction Form -->
             <div class="card">
-                <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Issue Restriction</h2>
+                <div class="card-header-icon">
+                    <span class="card-icon">🚫</span>
+                    <h2 style="font-size: 1.25rem; font-weight: 600;">Issue Restriction</h2>
+                </div>
+                <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 1rem;">Manually restrict a citizen from a department</p>
                 <form id="issue-restriction-form">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="form-group">
@@ -62,7 +93,7 @@
                             <input type="date" id="restrict-end-date" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-danger">Issue Restriction</button>
+                    <button type="submit" class="btn btn-danger w-full">Issue Restriction</button>
                 </form>
             </div>
         </div>
@@ -122,6 +153,60 @@
                         </tr>
                     </thead>
                     <tbody id="repeated-violations-table-body">
+                        <!-- Rows inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- High Risk Citizens (Trigger #2: auto_flag_high_risk) -->
+        <div class="card mb-8">
+            <div class="card-header-icon">
+                <span class="card-icon">🔴</span>
+                <h2 style="font-size: 1.25rem; font-weight: 600;">High Risk Citizens</h2>
+                <span class="badge badge-red" style="margin-left: auto;">Auto-Flagged by Trigger</span>
+            </div>
+            <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 1rem;">Citizens automatically flagged when their score drops below 40 (60-day restriction)</p>
+            <div class="table-container">
+                <table style="min-width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Citizen ID</th>
+                            <th>Full Name</th>
+                            <th>City</th>
+                            <th>Current Score</th>
+                            <th>Flagged Date</th>
+                            <th>Flag Expiry</th>
+                        </tr>
+                    </thead>
+                    <tbody id="high-risk-table-body">
+                        <!-- Rows inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Auto-Generated Restrictions (Trigger #3: auto_restrict_repeated_violation) -->
+        <div class="card mb-8">
+            <div class="card-header-icon">
+                <span class="card-icon">⚡</span>
+                <h2 style="font-size: 1.25rem; font-weight: 600;">Auto-Generated Restrictions</h2>
+                <span class="badge badge-orange" style="margin-left: auto;">Trigger-Created</span>
+            </div>
+            <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 1rem;">Restrictions auto-created for repeated violations (3+ same offense in a month = 30-day ban)</p>
+            <div class="table-container">
+                <table style="min-width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Citizen</th>
+                            <th>Restriction Type</th>
+                            <th>Department</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auto-restrictions-table-body">
                         <!-- Rows inserted here -->
                     </tbody>
                 </table>
