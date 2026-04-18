@@ -46,3 +46,6 @@ A full-stack web application designed for a government-run Citizen Trust Score M
    npm run dev
    ```
    The frontend will be available at `http://localhost:5173`.
+
+
+## Full Project youtube video Link : https://youtu.be/7RQXllJ_IWg
