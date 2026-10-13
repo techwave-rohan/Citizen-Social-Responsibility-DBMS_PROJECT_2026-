@@ -48,7 +48,7 @@ dbconfig.properties
 # ===============================
 # Python
 # ===============================
-.env
+# .env
 __pycache__/
 *.pyc
 venv/
